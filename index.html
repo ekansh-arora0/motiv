@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MotiveAR | Parkinson's Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --sidebar-bg: #0f1117;
+      --sidebar-w: 220px;
+      --bg: #f0f2f8;
+      --card: #ffffff;
+      --accent: #5b6ef5;
+      --accent2: #eef0ff;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f97316;
+      --purple: #a855f7;
+      --text: #1a1d2e;
+      --muted: #8b92a5;
+      --border: #e4e7f0;
+      --radius: 14px;
+    }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); display:flex; height:100vh; overflow:hidden; }
+
+    /* SIDEBAR */
+    .sidebar { width:var(--sidebar-w); background:var(--sidebar-bg); display:flex; flex-direction:column; padding:24px 0; flex-shrink:0; }
+    .sidebar-logo { display:flex; align-items:center; gap:10px; padding:0 20px 24px; font-weight:700; font-size:16px; color:#fff; }
+    .sidebar-logo .dot { width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff; }
+    .sidebar-search { margin:0 14px 18px; position:relative; }
+    .sidebar-search input { width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px 8px 30px;color:#fff;font-size:12px;outline:none;font-family:inherit; }
+    .sidebar-search input::placeholder { color:rgba(255,255,255,0.28); }
+    .sidebar-search .si { position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:0.38;font-size:12px; }
+    .nav-section { padding:0 10px; flex:1; }
+    .nav-item { display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;transition:all .15s;margin-bottom:2px; }
+    .nav-item:hover { background:rgba(255,255,255,0.06);color:#fff; }
+    .nav-item.active { background:var(--accent);color:#fff; }
+    .nav-item .badge { margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px; }
+    .nav-divider { height:1px;background:rgba(255,255,255,0.07);margin:10px 10px; }
+    .sidebar-footer { padding:14px 14px 0;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px; }
+    .avatar-sm { width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#5b6ef5,#a855f7);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;flex-shrink:0; }
+    .sidebar-footer .sname { font-size:12px;font-weight:600;color:#fff; }
+    .sidebar-footer .srole { font-size:10px;color:rgba(255,255,255,0.38); }
+
+    /* MAIN */
+    .main { flex:1;display:flex;flex-direction:column;overflow:hidden; }
+    .topbar { background:var(--card);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
+    .topbar h1 { font-size:18px;font-weight:700; }
+    .topbar p  { font-size:12px;color:var(--muted);margin-top:2px; }
+    .topbar-right { display:flex;align-items:center;gap:12px; }
+    .icon-btn { width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:var(--muted); }
+    .notif-dot { position:absolute;top:7px;right:7px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid #fff; }
+    .topbar-avatar { width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#5b6ef5,#a855f7);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;cursor:pointer; }
+    .live-indicator { display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green);font-weight:600; }
+    .live-dot { width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.4s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.45;transform:scale(1.5)} }
+
+    .content { flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:18px; }
+    .content::-webkit-scrollbar { width:4px; }
+    .content::-webkit-scrollbar-thumb { background:var(--border);border-radius:4px; }
+
+    /* STAT CARDS */
+    .stat-row { display:grid;grid-template-columns:repeat(4,1fr);gap:14px; }
+    .stat-card { background:var(--card);border-radius:var(--radius);padding:18px 20px;border:1px solid var(--border); }
+    .stat-card-top { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px; }
+    .stat-icon { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0; }
+    .stat-label { font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.4px; }
+    .stat-val { font-size:26px;font-weight:700;letter-spacing:-1px;margin-top:2px; }
+    .stat-delta { font-size:11px;font-weight:600;margin-top:3px; }
+    .du { color:var(--green); } .dd { color:var(--red); }
+    .stat-mini { height:38px;width:100%;margin-top:10px;display:block; }
+
+    /* MID ROW */
+    .mid-row { display:grid;grid-template-columns:1fr 315px;gap:14px; }
+    .card { background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:20px; }
+    .card-hdr { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px; }
+    .card-hdr h3 { font-size:14px;font-weight:700; }
+    .card-hdr .sub { font-size:11px;color:var(--muted);margin-top:2px; }
+    .pill-sel { background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--muted);font-family:inherit;cursor:pointer;outline:none; }
+    .chart-kpis { display:flex;gap:22px;margin-bottom:12px; }
+    .kpi-val { font-size:19px;font-weight:700; }
+    .kpi-label { font-size:11px;color:var(--muted);margin-top:1px; }
+    .kpi-delta { font-size:11px;font-weight:600;margin-left:5px; }
+
+    /* SIDE CARDS */
+    .side-cards { display:flex;flex-direction:column;gap:14px; }
+    .side-card { background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:18px; }
+    .side-card.dark { background:#1a1d2e;border-color:#1a1d2e;color:#fff; }
+    .sc-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
+    .sc-top h4 { font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px; }
+    .sc-icon { width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px; }
+    .sc-big { font-size:26px;font-weight:700; }
+    .sc-sub { font-size:11px;color:var(--muted);margin-top:2px; }
+    .side-card.dark .sc-sub { color:rgba(255,255,255,0.38); }
+    .dot-matrix { display:flex;align-items:center;justify-content:flex-end;gap:4px; }
+    .dot-col { display:flex;flex-direction:column;gap:4px; }
+    .dot-cell { width:10px;height:10px;border-radius:50%;background:var(--red);opacity:0.14;transition:opacity .3s; }
+    .dot-cell.lit { opacity:1; }
+
+    /* TABLE */
+    .table-card { background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden; }
+    .table-top { padding:16px 22px;display:flex;align-items:center;justify-content:space-between; }
+    .table-top h3 { font-size:14px;font-weight:700; }
+    .table-top .sub { font-size:11px;color:var(--muted);margin-top:2px; }
+    .tsearch { display:flex;align-items:center;gap:8px; }
+    .tsearch input { border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;outline:none;font-family:inherit;background:var(--bg);color:var(--text); }
+    .filter-btn { border:1px solid var(--border);border-radius:8px;padding:7px 14px;background:var(--card);font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;color:var(--muted); }
+    table { width:100%;border-collapse:collapse; }
+    thead tr { border-bottom:1px solid var(--border); }
+    thead th { padding:9px 20px;font-size:10px;font-weight:600;color:var(--muted);text-align:left;text-transform:uppercase;letter-spacing:0.5px; }
+    tbody tr { border-bottom:1px solid var(--border);transition:background .12s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:var(--bg); }
+    tbody td { padding:11px 20px;font-size:13px; }
+    .pcell { display:flex;align-items:center;gap:10px; }
+    .pavatar { width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0; }
+    .spill { padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600; }
+    .spill.stable   { background:#dcfce7;color:#15803d; }
+    .spill.elevated { background:#fef9c3;color:#a16207; }
+    .spill.critical { background:#fee2e2;color:#b91c1c; }
+    .abtn { background:var(--accent2);color:var(--accent);border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s; }
+    .abtn:hover { background:#dde1ff; }
+    canvas { display:block; }
+
+    /* MODAL */
+    .modal-backdrop { position:fixed;inset:0;background:rgba(15,17,23,0.55);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s; }
+    .modal-backdrop.open { opacity:1;pointer-events:all; }
+    .modal { background:#fff;border-radius:18px;width:540px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.22);transform:translateY(16px);transition:transform .2s; }
+    .modal-backdrop.open .modal { transform:translateY(0); }
+    .modal-header { display:flex;align-items:center;justify-content:space-between;padding:22px 26px 0; }
+    .modal-header h2 { font-size:16px;font-weight:700; }
+    .modal-close { width:30px;height:30px;border:none;background:var(--bg);border-radius:8px;cursor:pointer;font-size:16px;color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:inherit; }
+    .modal-body { padding:20px 26px 26px; }
+    .modal-patient-head { display:flex;align-items:center;gap:14px;margin-bottom:20px; }
+    .modal-avatar { width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;flex-shrink:0; }
+    .modal-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+    .mstat { background:var(--bg);border-radius:10px;padding:14px 16px; }
+    .mstat-label { font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);font-weight:600; }
+    .mstat-val { font-size:20px;font-weight:700;margin-top:3px; }
+    .mstat-sub { font-size:11px;color:var(--muted);margin-top:2px; }
+    .modal-hist { margin-top:16px; }
+    .modal-hist h4 { font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px; }
+
+    /* NOTIFICATIONS DROPDOWN */
+    .notif-panel { position:absolute;top:calc(100% + 8px);right:0;width:300px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.14);z-index:500;display:none; }
+    .notif-panel.open { display:block; }
+    .notif-panel-hdr { display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border); }
+    .notif-panel-hdr span { font-size:13px;font-weight:700; }
+    .notif-panel-hdr button { background:none;border:none;font-size:11px;color:var(--accent);cursor:pointer;font-family:inherit;font-weight:600; }
+    .notif-item { display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s; }
+    .notif-item:last-child { border-bottom:none; }
+    .notif-item:hover { background:var(--bg); }
+    .notif-dot-sm { width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px; }
+    .notif-item-text { font-size:12px;line-height:1.5; }
+    .notif-item-time { font-size:10px;color:var(--muted);margin-top:2px; }
+
+    /* PROFILE DROPDOWN */
+    .profile-panel { position:absolute;top:calc(100% + 8px);right:0;width:220px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.14);z-index:500;display:none;padding:8px 0; }
+    .profile-panel.open { display:block; }
+    .profile-panel-head { padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px; }
+    .ppi { display:flex;flex-direction:column; }
+    .ppi-name { font-size:13px;font-weight:700; }
+    .ppi-role { font-size:11px;color:var(--muted); }
+    .profile-item { display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;cursor:pointer;color:var(--text);transition:background .12s; }
+    .profile-item:hover { background:var(--bg); }
+    .profile-item.danger { color:var(--red); }
+
+    /* FILTER DROPDOWN */
+    .filter-panel { position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,0.12);z-index:400;display:none;padding:6px;min-width:150px; }
+    .filter-panel.open { display:block; }
+    .filter-opt { padding:8px 12px;font-size:12px;border-radius:6px;cursor:pointer;transition:background .12s;font-family:inherit;border:none;background:none;width:100%;text-align:left;color:var(--text); }
+    .filter-opt:hover { background:var(--bg); }
+    .filter-opt.selected { background:var(--accent2);color:var(--accent);font-weight:600; }
+
+    /* PAGE SECTIONS */
+    .page-section { display:none;flex-direction:column;gap:18px; }
+    .page-section.active { display:flex; }
+    .section-card { background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:28px; }
+    .section-card h2 { font-size:18px;font-weight:700;margin-bottom:6px; }
+    .section-card p { font-size:13px;color:var(--muted);line-height:1.7; }
+    .section-card ul { margin-top:14px;padding-left:18px; }
+    .section-card ul li { font-size:13px;color:var(--muted);margin-bottom:7px;line-height:1.6; }
+    .section-placeholder { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted); }
+    .section-placeholder .icon { font-size:48px;margin-bottom:12px;opacity:0.4; }
+    .section-placeholder h3 { font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px; }
+    .section-placeholder p { font-size:13px;text-align:center;max-width:320px; }
+
+    /* ICON BTN WRAPPER */
+    .icon-btn-wrap { position:relative; }
+
+    /* COMPACT MODE */
+    body.compact .stat-row { grid-template-columns:repeat(4,1fr); }
+    body.compact .mid-row { grid-template-columns:1fr 260px; }
+    body.compact .stat-val { font-size:20px; }
+    body.compact .stat-card { padding:12px 14px; }
+    body.compact .content { padding:14px 20px;gap:12px; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="dot">M</div>MotiveAR
+  </div>
+  <div class="sidebar-search">
+    <span class="si">&#128269;</span>
+    <input type="text" id="sidebar-search" placeholder="Search here..." />
+  </div>
+  <div class="nav-section">
+    <div class="nav-item active" data-page="overview">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Overview
+    </div>
+    <div class="nav-item" data-page="sessions">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Sessions
+    </div>
+    <div class="nav-item" data-page="doctors">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Doctors
+    </div>
+    <div class="nav-item" data-page="patients">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Patients
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-page="reports">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+      Reports
+    </div>
+    <div class="nav-item" data-page="messages">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Messages <span class="badge" id="msg-badge">3</span>
+    </div>
+    <div class="nav-item" data-page="prescriptions">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+      Prescriptions
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="avatar-sm">DR</div>
+    <div>
+      <div class="sname">Dr. Rivera</div>
+      <div class="srole">Neurologist &middot; PD Unit</div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1>Welcome back, Dr. Rivera</h1>
+      <p>Track and manage your Parkinson's patient motor data in real time.</p>
+    </div>
+    <div class="topbar-right">
+      <div class="live-indicator"><div class="live-dot"></div>Live Data</div>
+      <div class="icon-btn" id="btn-compact" title="Toggle compact view">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </div>
+      <div class="icon-btn-wrap">
+        <div class="icon-btn" id="btn-notif" title="Notifications">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="notif-dot" id="notif-dot"></div>
+        </div>
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-hdr"><span>Notifications</span><button id="mark-read-btn">Mark all read</button></div>
+          <div id="notif-items"></div>
+        </div>
+      </div>
+      <div class="icon-btn-wrap">
+        <div class="topbar-avatar" id="btn-profile" title="Profile">DR</div>
+        <div class="profile-panel" id="profile-panel">
+          <div class="profile-panel-head">
+            <div class="topbar-avatar" style="width:38px;height:38px;font-size:13px;">DR</div>
+            <div class="ppi"><div class="ppi-name">Dr. Rivera</div><div class="ppi-role">Neurologist · PD Unit</div></div>
+          </div>
+          <div class="profile-item">&#128100; My Profile</div>
+          <div class="profile-item">&#9881;&#65039; Settings</div>
+          <div class="profile-item">&#128275; Privacy</div>
+          <div class="profile-item danger">&#8594; Sign Out</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW PAGE -->
+    <div class="page-section active" id="page-overview">
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div>
+            <div class="stat-label">Active Patients</div>
+            <div class="stat-val" id="stat-patients">142</div>
+            <div class="stat-delta du">&#9650; 12% from last week</div>
+          </div>
+          <div class="stat-icon" style="background:#eef0ff;">&#129504;</div>
+        </div>
+        <canvas class="stat-mini" id="chart-patients" height="38"></canvas>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div>
+            <div class="stat-label">Avg Tremor Freq</div>
+            <div class="stat-val" id="stat-tremor">4.2 <span style="font-size:13px;font-weight:500;color:var(--muted)">Hz</span></div>
+            <div class="stat-delta dd" id="delta-tremor">&#9660; 0.3 Hz vs yesterday</div>
+          </div>
+          <div class="stat-icon" style="background:#fff0f0;">&#9889;</div>
+        </div>
+        <canvas class="stat-mini" id="chart-tremor" height="38"></canvas>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div>
+            <div class="stat-label">Motor Stability</div>
+            <div class="stat-val" id="stat-stability">87 <span style="font-size:13px;font-weight:500;color:var(--muted)">%</span></div>
+            <div class="stat-delta du" id="delta-stability">&#9650; 5% this session</div>
+          </div>
+          <div class="stat-icon" style="background:#f0fff4;">&#127919;</div>
+        </div>
+        <canvas class="stat-mini" id="chart-stability" height="38"></canvas>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div>
+            <div class="stat-label">Drills Completed</div>
+            <div class="stat-val" id="stat-drills">38</div>
+            <div class="stat-delta du" id="delta-drills">&#9650; 8 new today</div>
+          </div>
+          <div class="stat-icon" style="background:#fdf4ff;">&#10003;</div>
+        </div>
+        <canvas class="stat-mini" id="chart-drills" height="38"></canvas>
+      </div>
+    </div>
+
+    <!-- MID ROW -->
+    <div class="mid-row">
+      <div class="card">
+        <div class="card-hdr">
+          <div>
+            <h3>Motor Signal Overview</h3>
+            <div class="sub">Live tremor frequency &amp; stability &mdash; all patients</div>
+          </div>
+          <select class="pill-sel"><option>Last 60s</option><option>Last 2m</option></select>
+        </div>
+        <div class="chart-kpis">
+          <div>
+            <span class="kpi-val" id="live-trem">4.2</span>
+            <span style="font-size:12px;color:var(--muted)"> Hz</span>
+            <span class="kpi-delta dd" id="kpi-td">&#9660; 0.3</span>
+            <div class="kpi-label">Avg Tremor</div>
+          </div>
+          <div>
+            <span class="kpi-val" id="live-stab">87</span>
+            <span style="font-size:12px;color:var(--muted)"> %</span>
+            <span class="kpi-delta du" id="kpi-sd">&#9650; 5%</span>
+            <div class="kpi-label">Stability</div>
+          </div>
+          <div>
+            <span class="kpi-val" id="live-rms">0.18</span>
+            <span style="font-size:12px;color:var(--muted)"> g</span>
+            <span class="kpi-delta dd" id="kpi-rd">&#9660; 0.02</span>
+            <div class="kpi-label">RMS Accel</div>
+          </div>
+          <div>
+            <span class="kpi-val" id="live-spikes">24</span>
+            <span style="font-size:12px;color:var(--muted)"> events</span>
+            <div class="kpi-label">Spike Events</div>
+          </div>
+        </div>
+        <canvas id="main-chart" height="148" style="width:100%;"></canvas>
+      </div>
+      <div class="side-cards">
+        <div class="side-card">
+          <div class="sc-top">
+            <h4><div class="sc-icon" style="background:#fee2e2;">&#128308;</div>Tremor Spikes</h4>
+          </div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+            <div>
+              <div class="sc-big" id="spike-count">24</div>
+              <div class="sc-sub">Detected today</div>
+              <div style="font-size:11px;color:var(--red);font-weight:600;margin-top:4px;" id="spike-delta">&#9650; 6% vs yesterday</div>
+            </div>
+            <div class="dot-matrix" id="dot-matrix"></div>
+          </div>
+        </div>
+        <div class="side-card dark">
+          <div class="sc-top">
+            <h4 style="color:#fff;"><div class="sc-icon" style="background:rgba(91,110,245,0.28);">&#128202;</div>Stability Score</h4>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:12px;">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="sc-big" id="stability-big">87</div>
+                <span id="stability-delta" style="font-size:11px;font-weight:700;color:#22c55e;">&#9650; 5%</span>
+              </div>
+              <div class="sc-sub">Avg across patients</div>
+            </div>
+            <canvas id="stab-bar" height="52" style="flex:1;min-width:80px;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-card">
+      <div class="table-top">
+        <div>
+          <h3>Recent Patient Sessions</h3>
+          <div class="sub">Live motor data &mdash; refreshes every second</div>
+        </div>
+        <div class="tsearch">
+          <input type="text" placeholder="Search patient..." id="patient-search" />
+          <div class="icon-btn-wrap">
+            <button class="filter-btn" id="btn-filter">&#9776; Filters</button>
+            <div class="filter-panel" id="filter-panel">
+              <button class="filter-opt selected" data-filter="all">All Patients</button>
+              <button class="filter-opt" data-filter="stable">Stable</button>
+              <button class="filter-opt" data-filter="elevated">Elevated</button>
+              <button class="filter-opt" data-filter="critical">Critical</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Patient</th><th>Last Session</th><th>Tremor Hz</th>
+            <th>Stability</th><th>Drills</th><th>Status</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="patient-tbody"></tbody>
+      </table>
+    </div>
+
+    </div><!-- /page-overview -->
+
+    <!-- SESSIONS PAGE -->
+    <div class="page-section" id="page-sessions">
+      <div class="section-card">
+        <h2>&#128197; Session History</h2>
+        <p>A complete log of all AR motor-training sessions conducted across your patient cohort. Data updates in real time as patients complete drills.</p>
+        <ul id="sessions-list"></ul>
+      </div>
+    </div>
+
+    <!-- DOCTORS PAGE -->
+    <div class="page-section" id="page-doctors">
+      <div class="section-card">
+        <h2>&#128104;&#8205;&#9877;&#65039; Clinical Team</h2>
+        <p>Neurologists and therapists currently assigned to Parkinson's motor rehabilitation patients.</p>
+        <ul id="doctors-list"></ul>
+      </div>
+    </div>
+
+    <!-- PATIENTS PAGE -->
+    <div class="page-section" id="page-patients">
+      <div class="section-card">
+        <h2>&#128100; Patient Registry</h2>
+        <p>All patients enrolled in the MotiveAR Parkinson's motor rehabilitation program. Click <em>View Session</em> on the Overview table for live per-patient data.</p>
+        <ul id="patients-list"></ul>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div class="page-section" id="page-reports">
+      <div class="section-card">
+        <h2>&#128196; Clinical Reports</h2>
+        <p>Auto-generated motor performance reports based on AR drill data. Reports are compiled weekly and can be exported for clinical review.</p>
+        <ul id="reports-list"></ul>
+      </div>
+    </div>
+
+    <!-- MESSAGES PAGE -->
+    <div class="page-section" id="page-messages">
+      <div class="section-card">
+        <h2>&#128172; Messages</h2>
+        <p>Secure clinical messaging between care team members.</p>
+        <ul id="messages-list"></ul>
+      </div>
+    </div>
+
+    <!-- PRESCRIPTIONS PAGE -->
+    <div class="page-section" id="page-prescriptions">
+      <div class="section-card">
+        <h2>&#128203; AR Drill Prescriptions</h2>
+        <p>Prescribed MotiveAR exercise regimens for each patient, reviewed monthly by the clinical team.</p>
+        <ul id="prescriptions-list"></ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PATIENT MODAL -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" id="patient-modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Patient Session</h2>
+      <button class="modal-close" id="modal-close">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-patient-head">
+        <div class="modal-avatar" id="modal-avatar"></div>
+        <div>
+          <div style="font-size:16px;font-weight:700;" id="modal-name"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="modal-meta"></div>
+        </div>
+      </div>
+      <div class="modal-grid">
+        <div class="mstat"><div class="mstat-label">Tremor Freq</div><div class="mstat-val" id="modal-tremor">—</div><div class="mstat-sub">Current reading</div></div>
+        <div class="mstat"><div class="mstat-label">Stability Score</div><div class="mstat-val" id="modal-stability">—</div><div class="mstat-sub">This session</div></div>
+        <div class="mstat"><div class="mstat-label">Drills Completed</div><div class="mstat-val" id="modal-drills">—</div><div class="mstat-sub">Total enrolled</div></div>
+        <div class="mstat"><div class="mstat-label">Status</div><div class="mstat-val" id="modal-status">—</div><div class="mstat-sub">Clinical classification</div></div>
+        <div class="mstat"><div class="mstat-label">Spike Events</div><div class="mstat-val" id="modal-spikes">—</div><div class="mstat-sub">Detected today</div></div>
+        <div class="mstat"><div class="mstat-label">Last Session</div><div class="mstat-val" style="font-size:14px;" id="modal-last">—</div><div class="mstat-sub">Most recent activity</div></div>
+      </div>
+      <div class="modal-hist">
+        <h4>Affected Side &amp; Baseline</h4>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <div class="mstat" style="flex:1;"><div class="mstat-label">Hand</div><div class="mstat-val" style="font-size:15px;" id="modal-side">—</div></div>
+          <div class="mstat" style="flex:1;"><div class="mstat-label">Baseline Tremor</div><div class="mstat-val" style="font-size:15px;" id="modal-bt">—</div></div>
+          <div class="mstat" style="flex:1;"><div class="mstat-label">Baseline Stability</div><div class="mstat-val" style="font-size:15px;" id="modal-bs">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SEEDED PRNG (no Math.random at definition time for patient data) ──
+function mulberry32(seed){
+  return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+}
+// one rng seeded from page-load timestamp so it's different every reload
+const prng=mulberry32(Date.now()&0xFFFFFF);
+function rng(lo,hi){return lo+prng()*(hi-lo);}
+function rngInt(lo,hi){return Math.floor(rng(lo,hi+1));}
+function pick(arr){return arr[Math.floor(prng()*arr.length)];}
+
+// ── NAME POOLS (common across many real populations, nothing "diverse checkbox") ──
+const FIRST=['Michael','Linda','David','Patricia','Robert','Barbara','William','Susan',
+             'Richard','Jessica','Thomas','Sarah','Charles','Karen','Daniel','Nancy',
+             'Matthew','Lisa','Anthony','Betty','Mark','Dorothy','Paul','Sandra',
+             'Steven','Ashley','Andrew','Helen','Kenneth','Donna','Joshua','Carol',
+             'Kevin','Ruth','Brian','Sharon','George','Michelle','Edward','Laura'];
+const LAST=['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis',
+            'Wilson','Taylor','Moore','Anderson','Thomas','Jackson','White','Harris',
+            'Martin','Thompson','Robinson','Clark','Lewis','Walker','Hall','Allen',
+            'Young','King','Wright','Scott','Green','Adams','Baker','Nelson',
+            'Carter','Mitchell','Perez','Roberts','Turner','Phillips','Campbell','Parker'];
+
+// ── DOCTOR POOL ──
+const DR_FIRST=['James','Maria','Aisha','Wei','Carlos','Priya','Ethan','Fatima'];
+const DR_LAST=['Okonkwo','Larsson','Mehta','Tanaka','Reeves','Sharma','Nguyen','Kowalski'];
+const DR_ROLE=['Neurologist','Movement Disorder Specialist','Occupational Therapist','Physical Therapist','Clinical Researcher'];
+
+// ── GENERATE PATIENTS ──
+const PATIENT_COUNT=rngInt(6,9);
+const SIDES=['Right','Left','Both'];
+const COLORS=['#5b6ef5','#a855f7','#f97316','#22c55e','#ef4444','#0ea5e9','#d946ef','#eab308','#14b8a6'];
+
+// shuffle color pool so assignments aren't index-deterministic
+const colorPool=[...COLORS].sort(()=>prng()-.5);
+
+const PATIENTS=Array.from({length:PATIENT_COUNT},(_,i)=>{
+  const fn=pick(FIRST), ln=pick(LAST);
+  const age=rngInt(55,79);
+  const side=pick(SIDES);
+  // tremor baseline: pulled from a realistic PD range, jittered by age/side
+  const ageFactor=(age-55)/24; // 0–1
+  const bT=parseFloat((2.3+ageFactor*4.1+rng(-0.6,0.6)).toFixed(1));
+  // stability inversely correlated with tremor, with noise
+  const bS=Math.round(Math.max(38,Math.min(96, 97-bT*7.2+rng(-6,6))));
+  return {
+    id:i+1,
+    name:fn+' '+ln,
+    init:fn[0]+ln[0],
+    color:colorPool[i%colorPool.length],
+    age, side, bT, bS
+  };
+});
+
+// ── GENERATE DOCTORS ──
+const DOCTORS=Array.from({length:rngInt(3,5)},()=>({
+  name:'Dr. '+pick(DR_FIRST)+' '+pick(DR_LAST),
+  role:pick(DR_ROLE),
+  patients:rngInt(4,14)
+}));
+
+// ── ENROLL MONTHS ──
+const ENROLL_MONTHS=['Jan 2026','Feb 2026','Mar 2026','Jan 2026','Feb 2026','Mar 2026','Jan 2026','Feb 2026'];
+
+// ── RUNNING STATE ──
+function rT(){
+  const m=rngInt(2,58);
+  return m<60?m+'m ago':Math.floor(m/60)+'h '+m%60+'m ago';
+}
+const ST=PATIENTS.map((p,i)=>({
+  ...p,
+  tremor:p.bT,
+  stability:p.bS,
+  drills:rngInt(2,12),
+  lastSession:rT(),
+  spikes:Math.round(p.bT*rng(2.4,3.6)),
+  enrollMonth:ENROLL_MONTHS[i%ENROLL_MONTHS.length],
+  drillTarget:rngInt(3,8),
+  pathTarget:rngInt(2,5)
+}));
+
+// ── SERIES DATA ──
+const SL=60;
+const avgBT=PATIENTS.reduce((s,p)=>s+p.bT,0)/PATIENTS.length;
+const avgBS=PATIENTS.reduce((s,p)=>s+p.bS,0)/PATIENTS.length;
+const tS=Array.from({length:SL},(_,i)=>parseFloat((avgBT+Math.sin(i*.28)*1.4+rng(-.4,.4)).toFixed(2)));
+const sS=Array.from({length:SL},(_,i)=>parseFloat((avgBS-Math.sin(i*.22)*9+rng(-3,3)).toFixed(2)));
+const rS=Array.from({length:SL},(_,i)=>parseFloat((0.08+Math.sin(i*.19)*.07+rng(0,.04)).toFixed(3)));
+const mH={
+  patients:Array.from({length:24},()=>parseFloat((PATIENT_COUNT*17+rng(-8,8)).toFixed(1))),
+  tremor:  Array.from({length:24},()=>parseFloat((avgBT+rng(-.8,.8)).toFixed(2))),
+  stability:Array.from({length:24},()=>parseFloat((avgBS+rng(-7,7)).toFixed(1))),
+  drills:  Array.from({length:24},()=>parseFloat((ST.reduce((s,p)=>s+p.drills,0)+rng(-5,5)).toFixed(0))),
+};
+const sbD=Array.from({length:14},()=>Math.round(avgBS+rng(-15,15)));
+const DOT_R=4,DOT_C=5;
+
+// ── CANVAS REFS ──
+const mainC=document.getElementById('main-chart'),mainCtx=mainC.getContext('2d');
+const sbC=document.getElementById('stab-bar'),sbCtx=sbC.getContext('2d');
+const mC={patients:document.getElementById('chart-patients'),tremor:document.getElementById('chart-tremor'),stability:document.getElementById('chart-stability'),drills:document.getElementById('chart-drills')};
+
+function dprSize(c){
+  const dpr=window.devicePixelRatio||1;
+  const h=parseInt(c.getAttribute('height')||40);
+  c.width=c.parentElement.clientWidth*dpr;
+  c.height=h*dpr;
+  c.style.width='100%';c.style.height=h+'px';
+  c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+}
+function initAll(){[mainC,sbC,...Object.values(mC)].forEach(dprSize);}
+window.addEventListener('resize',initAll);
+initAll();
+
+// DOT MATRIX
+const dmEl=document.getElementById('dot-matrix');
+for(let c=0;c<DOT_C;c++){const col=document.createElement('div');col.className='dot-col';for(let r=0;r<DOT_R;r++){const d=document.createElement('div');d.className='dot-cell';d.id='d'+c+'x'+r;col.appendChild(d);}dmEl.appendChild(col);}
+
+function hRgba(h,a){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+
+function drawLine(ctx,data,w,h,color,fill,mn,mx){
+  if(data.length<2)return;
+  const pad=3,rng=mx-mn||1,step=(w-pad*2)/(data.length-1);
+  const pts=data.map((v,i)=>({x:pad+i*step,y:pad+(1-(v-mn)/rng)*(h-pad*2)}));
+  if(fill){
+    ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x,h);ctx.lineTo(pts[0].x,h);ctx.closePath();
+    ctx.fillStyle=hRgba(color,0.12);ctx.fill();
+  }
+  ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+}
+
+function drawMini(id,data,color){
+  const c=mC[id];if(!c)return;
+  const ctx=c.getContext('2d'),w=c.clientWidth,h=c.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  const mn=Math.min(...data)*.97,mx=Math.max(...data)*1.03;
+  drawLine(ctx,data,w,h,color,true,mn,mx);
+}
+
+function drawMain(){
+  const ctx=mainCtx,w=mainC.clientWidth,h=parseInt(mainC.getAttribute('height')||148);
+  ctx.clearRect(0,0,w,h);
+  for(let i=0;i<=4;i++){const y=(h/4)*i;ctx.strokeStyle='#e8eaf0';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+  const mn=0.5,mx=10.5;
+  const sMin=35,sMax=105;
+  const sMapped=sS.map(v=>mn+(v-sMin)/(sMax-sMin)*(mx-mn));
+  drawLine(ctx,rS.map(v=>mn+v*(mx-mn)/1.5),w,h,'#f97316',true,mn,mx);
+  drawLine(ctx,sMapped,w,h,'#a855f7',true,mn,mx);
+  drawLine(ctx,tS,w,h,'#5b6ef5',true,mn,mx);
+  ctx.fillStyle='#aab0be';ctx.font='9px Inter';ctx.textAlign='left';
+  [[9,'9Hz'],[6,'6Hz'],[3,'3Hz']].forEach(([v,l])=>{ctx.fillText(l,2,3+(1-(v-mn)/(mx-mn))*(h-6));});
+  ctx.textAlign='center';
+  for(let i=0;i<SL;i+=15){const x=(i/(SL-1))*w;ctx.fillText('-'+(SL-1-i)+'s',x,h-1);}
+  const ld=[['#5b6ef5','Tremor Hz'],['#a855f7','Stability'],['#f97316','RMS Accel']];
+  ld.forEach(([c,l],i)=>{
+    const lx=w-160+i*52;
+    ctx.fillStyle=c;ctx.beginPath();ctx.arc(lx,h-7,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#6b7280';ctx.textAlign='left';ctx.fillText(l,lx+7,h-4);
+  });
+}
+
+function drawStabBar(){
+  const c=sbC,ctx=sbCtx,w=c.clientWidth,h=parseInt(c.getAttribute('height')||52);
+  ctx.clearRect(0,0,w,h);
+  const n=sbD.length,gap=2,bw=(w-gap*(n-1))/n;
+  sbD.forEach((v,i)=>{
+    const bh=(v/100)*(h-6),x=i*(bw+gap),y=h-6-bh;
+    ctx.fillStyle=i===n-1?'#2dff99':'rgba(255,255,255,0.2)';
+    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,bw,bh,2);else ctx.rect(x,y,bw,bh);ctx.fill();
+  });
+}
+
+function statusFor(t,s){
+  if(t>6||s<65)return{label:'Critical',cls:'critical'};
+  if(t>4.5||s<80)return{label:'Elevated',cls:'elevated'};
+  return{label:'Stable',cls:'stable'};
+}
+
+// ── POPULATE STATIC PAGES ──
+function buildPages(){
+  const drillTypes=['Target Drill','Path Draw','Grip Stability','Pointer Track'];
+  const agos=['1h ago','3h ago','5h ago','Yesterday','2 days ago'];
+
+  // Sessions
+  const sl=document.getElementById('sessions-list');sl.innerHTML='';
+  [...ST].sort(()=>Math.random()-.5).forEach(p=>{
+    const drill=pick(drillTypes);
+    const dur=rngInt(11,28);
+    const prec=Math.round(p.bS+rng(-8,8));
+    const d=Math.floor(rng(1,8));
+    const ago=d===1?'Today':'Mar '+(8-d)+', 2026';
+    const li=document.createElement('li');
+    li.innerHTML=`<strong>${p.name}</strong> — ${drill} · ${dur} min · Precision ${Math.min(99,Math.max(40,prec))}% · ${ago}`;
+    sl.appendChild(li);
+  });
+
+  // Doctors
+  const dl=document.getElementById('doctors-list');dl.innerHTML='';
+  DOCTORS.forEach(d=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<strong>${d.name}</strong> — ${d.role} · ${d.patients} active patients`;
+    dl.appendChild(li);
+  });
+
+  // Patients
+  const pl=document.getElementById('patients-list');pl.innerHTML='';
+  ST.forEach(p=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<strong>${p.name}</strong> · Age ${p.age} · ${p.side} hand · Enrolled ${p.enrollMonth}`;
+    pl.appendChild(li);
+  });
+
+  // Reports (derived from actual baseline averages)
+  const rl=document.getElementById('reports-list');rl.innerHTML='';
+  const weekStarts=['Mar 2, 2026','Feb 23, 2026','Feb 16, 2026','Feb 9, 2026'];
+  weekStarts.forEach((w,i)=>{
+    const wt=(avgBT+i*0.28+rng(0,.15)).toFixed(1);
+    const ws=Math.round(avgBS-i*3.1+rng(-2,2));
+    const wd=Math.round(ST.reduce((s,p)=>s+p.drills,0)*rng(0.7,1.0))-i*rngInt(3,6);
+    const li=document.createElement('li');
+    li.innerHTML=`<strong>Week of ${w}</strong> — Avg tremor: ${wt} Hz · Avg stability: ${Math.max(55,ws)}% · ${Math.max(8,wd)} drills`;
+    rl.appendChild(li);
+  });
+
+  // Messages (worst performers get flagged)
+  const ml=document.getElementById('messages-list');ml.innerHTML='';
+  const sorted=[...ST].sort((a,b)=>b.tremor-a.tremor);
+  const msgTemplates=[
+    (p,d)=>`<strong>${d.name}</strong> — "${p.name}'s tremor frequency has been elevated this week. Recommend medication review." · <em>${pick(agos)}</em>`,
+    (p,d)=>`<strong>${d.name}</strong> — "${p.name} completed all prescribed drills — best compliance this month." · <em>${pick(agos)}</em>`,
+    (p,d)=>`<strong>${d.name}</strong> — "${p.name}'s stability score reached ${Math.round(p.bS+rng(3,10))}% during today's session." · <em>${pick(agos)}</em>`,
+  ];
+  sorted.slice(0,3).forEach((p,i)=>{
+    const doc=DOCTORS[i%DOCTORS.length];
+    const li=document.createElement('li');
+    li.innerHTML=msgTemplates[i](p,doc);
+    ml.appendChild(li);
+  });
+
+  // Prescriptions
+  const prl=document.getElementById('prescriptions-list');prl.innerHTML='';
+  ST.forEach(p=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<strong>${p.name}</strong> — Target Drill ×${p.drillTarget}/day, Path Draw ×${p.pathTarget}/day`;
+    prl.appendChild(li);
+  });
+}
+
+// ── NOTIFICATIONS (derived from worst live state) ──
+function buildNotifs(){
+  const container=document.getElementById('notif-items');
+  container.innerHTML='';
+  const sorted=[...ST].sort((a,b)=>b.tremor-a.tremor);
+  const items=[
+    {p:sorted[0],color:'var(--red)',msg:`${sorted[0].name} — tremor spike >${sorted[0].tremor.toFixed(1)} Hz detected`,time:rngInt(1,5)+'m ago'},
+    {p:sorted[1],color:'var(--orange)',msg:`${sorted[1].name} — stability dropped to ${Math.round(sorted[1].stability)}%`,time:rngInt(8,18)+'m ago'},
+    {p:ST[rngInt(0,ST.length-1)],color:'var(--accent)',msg:`${ST[rngInt(0,ST.length-1)].name} — drill session completed`,time:rngInt(22,50)+'m ago'},
+  ];
+  items.forEach(it=>{
+    const d=document.createElement('div');d.className='notif-item';
+    d.innerHTML=`<div class="notif-dot-sm" style="background:${it.color}"></div><div><div class="notif-item-text">${it.msg}</div><div class="notif-item-time">${it.time}</div></div>`;
+    container.appendChild(d);
+  });
+}
+
+let activeFilter='all';
+
+function renderTable(){
+  const q=(document.getElementById('patient-search').value||'').toLowerCase();
+  const tb=document.getElementById('patient-tbody');tb.innerHTML='';
+  ST.filter(p=>{
+    if(!p.name.toLowerCase().includes(q))return false;
+    if(activeFilter==='all')return true;
+    return statusFor(p.tremor,p.stability).cls===activeFilter;
+  }).forEach(p=>{
+    const s=statusFor(p.tremor,p.stability);
+    const tc=p.tremor>5?'var(--red)':p.tremor>3.5?'var(--orange)':'var(--green)';
+    const sc=p.stability>80?'var(--green)':p.stability>65?'var(--orange)':'var(--red)';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="pcell">
+        <div class="pavatar" style="background:${p.color}">${p.init}</div>
+        <div><div style="font-weight:600;">${p.name}</div><div style="font-size:11px;color:var(--muted)">Age ${p.age} &middot; ${p.side} hand</div></div>
+      </div></td>
+      <td style="color:var(--muted);font-size:12px;">${p.lastSession}</td>
+      <td><span style="font-weight:600;color:${tc}">${p.tremor.toFixed(1)} Hz</span></td>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;height:5px;background:#e4e7f0;border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${Math.round(p.stability)}%;background:${sc};border-radius:3px;"></div>
+        </div>
+        <span style="font-size:12px;font-weight:600;">${Math.round(p.stability)}%</span>
+      </div></td>
+      <td style="font-weight:600;">${p.drills}</td>
+      <td><span class="spill ${s.cls}">${s.label}</span></td>
+      <td><button class="abtn" data-pid="${p.id}">View Session</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('.abtn[data-pid]').forEach(btn=>{
+    btn.addEventListener('click',()=>openModal(parseInt(btn.dataset.pid)));
+  });
+}
+
+function updateDots(n){
+  const total=DOT_R*DOT_C,lit=Math.min(total,Math.round((n/60)*total));
+  for(let c=0;c<DOT_C;c++)for(let r=0;r<DOT_R;r++){const d=document.getElementById('d'+c+'x'+r);if(d)d.classList.toggle('lit',c*DOT_R+r<lit);}
+}
+
+let tick=0;
+function updateAll(){
+  tick++;
+  // series — noise derived from actual patient baselines
+  const tBase=avgBT;
+  const sBase=avgBS;
+  tS.shift();tS.push(parseFloat((tBase+Math.sin(tick*.18)*1.6+Math.random()*.6+(Math.random()>.96?1.9:0)).toFixed(2)));
+  sS.shift();sS.push(parseFloat((sBase-Math.sin(tick*.13)*10+Math.random()*4).toFixed(2)));
+  rS.shift();rS.push(parseFloat((0.09+Math.sin(tick*.15)*.07+Math.random()*.04).toFixed(3)));
+
+  ST.forEach(p=>{
+    p.tremor=Math.max(1,Math.min(9.9,parseFloat((p.bT+Math.sin(tick*.11+p.id)*.85+(Math.random()-.5)*.55).toFixed(1))));
+    p.stability=Math.max(30,Math.min(99,parseFloat((p.bS+Math.sin(tick*.09+p.id)*4.5+(Math.random()-.5)*2.8).toFixed(1))));
+    if(tick%17===p.id%17){p.drills++;p.lastSession=rT();}
+    p.spikes=Math.round(p.tremor*rng(2.5,3.4)+Math.random()*1.5);
+  });
+
+  const cT=ST.reduce((s,p)=>s+p.tremor,0)/ST.length;
+  const cS=ST.reduce((s,p)=>s+p.stability,0)/ST.length;
+  const totD=ST.reduce((s,p)=>s+p.drills,0);
+  const totSp=ST.reduce((s,p)=>s+p.spikes,0);
+  const avgR=rS.reduce((a,b)=>a+b,0)/rS.length;
+
+  document.getElementById('stat-tremor').innerHTML=cT.toFixed(1)+' <span style="font-size:13px;font-weight:500;color:var(--muted)">Hz</span>';
+  document.getElementById('stat-stability').innerHTML=Math.round(cS)+' <span style="font-size:13px;font-weight:500;color:var(--muted)">%</span>';
+  document.getElementById('stat-drills').innerText=totD;
+
+  document.getElementById('live-trem').innerText=cT.toFixed(1);
+  document.getElementById('live-stab').innerText=Math.round(cS);
+  document.getElementById('live-rms').innerText=avgR.toFixed(2);
+  document.getElementById('live-spikes').innerText=totSp;
+
+  document.getElementById('spike-count').innerText=totSp;
+  document.getElementById('stability-big').innerText=Math.round(cS);
+  const dEl=document.getElementById('stability-delta');
+  const diff=cS-avgBS;
+  dEl.innerText=(diff>=0?'\u25b2 ':'\u25bc ')+Math.abs(diff).toFixed(1)+'%';
+  dEl.style.color=diff>=0?'#22c55e':'#ef4444';
+
+  mH.tremor.push(cT);mH.tremor.shift();
+  mH.stability.push(cS);mH.stability.shift();
+  mH.drills.push(totD);mH.drills.shift();
+  sbD.shift();sbD.push(Math.round(cS));
+
+  updateDots(totSp);
+  drawMain();
+  drawMini('patients',mH.patients,'#5b6ef5');
+  drawMini('tremor',mH.tremor,'#ef4444');
+  drawMini('stability',mH.stability,'#22c55e');
+  drawMini('drills',mH.drills,'#a855f7');
+  drawStabBar();
+  if(tick%2===0)renderTable();
+}
+
+// ── STAT CARD DELTAS (computed from baseline, not hardcoded) ──
+function buildStatDeltas(){
+  const wkPcts=[...Array(4)].map(()=>(rng(3,18)).toFixed(0));
+  document.querySelector('.stat-delta.du').innerText='\u25b2 '+wkPcts[0]+'% from last week';
+  const tDiff=(avgBT-tS.slice(-5).reduce((a,b)=>a+b,0)/5).toFixed(1);
+  document.getElementById('delta-tremor').innerText=(tDiff>0?'\u25bc ':'\u25b2 ')+Math.abs(tDiff)+' Hz vs yesterday';
+  const sDiff=(avgBS-sS.slice(-5).reduce((a,b)=>a+b,0)/5).toFixed(0);
+  document.getElementById('delta-stability').innerText=(sDiff<0?'\u25b2 ':'\u25bc ')+Math.abs(sDiff)+'% this session';
+  document.getElementById('delta-drills').innerText='\u25b2 '+rngInt(4,12)+' new today';
+}
+
+// ── INIT ──
+buildPages();
+buildNotifs();
+buildStatDeltas();
+renderTable();
+updateAll();
+setInterval(updateAll,1000);
+// refresh notifications every 45s with latest worst performers
+setInterval(buildNotifs,45000);
+
+// ── INTERACTIONS ──
+
+// NAV: page switching
+let activePage='overview';
+document.querySelectorAll('.nav-item[data-page]').forEach(el=>{
+  el.addEventListener('click',()=>{
+    activePage=el.dataset.page;
+    document.querySelectorAll('.nav-item[data-page]').forEach(n=>n.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
+    const pg=document.getElementById('page-'+activePage);
+    if(pg)pg.classList.add('active');
+    const titles={overview:'Overview',sessions:'Session History',doctors:'Clinical Team',patients:'Patient Registry',reports:'Clinical Reports',messages:'Messages',prescriptions:'Prescriptions'};
+    document.querySelector('.topbar h1').innerText=titles[activePage]||activePage;
+  });
+});
+
+// SIDEBAR SEARCH
+document.getElementById('sidebar-search').addEventListener('input',function(){
+  const q=this.value.toLowerCase();
+  document.querySelectorAll('.nav-item[data-page]').forEach(el=>{
+    el.style.opacity=(!q||el.textContent.toLowerCase().includes(q))?'1':'0.25';
+  });
+});
+
+// COMPACT TOGGLE
+document.getElementById('btn-compact').addEventListener('click',function(){
+  document.body.classList.toggle('compact');
+  this.style.background=document.body.classList.contains('compact')?'var(--accent2)':'';
+  this.style.color=document.body.classList.contains('compact')?'var(--accent)':'';
+  setTimeout(()=>{initAll();drawMain();},50);
+});
+
+// NOTIFICATIONS
+const notifBtn=document.getElementById('btn-notif');
+const notifPanel=document.getElementById('notif-panel');
+notifBtn.addEventListener('click',e=>{e.stopPropagation();notifPanel.classList.toggle('open');profilePanel.classList.remove('open');});
+document.getElementById('mark-read-btn').addEventListener('click',e=>{
+  e.stopPropagation();
+  document.getElementById('notif-dot').style.display='none';
+  document.getElementById('msg-badge').style.display='none';
+  document.querySelectorAll('#notif-items .notif-dot-sm').forEach(d=>d.style.opacity='0.3');
+});
+
+// PROFILE
+const profileBtn=document.getElementById('btn-profile');
+const profilePanel=document.getElementById('profile-panel');
+profileBtn.addEventListener('click',e=>{e.stopPropagation();profilePanel.classList.toggle('open');notifPanel.classList.remove('open');});
+
+// Close dropdowns on outside click
+document.addEventListener('click',()=>{notifPanel.classList.remove('open');profilePanel.classList.remove('open');filterPanel.classList.remove('open');});
+
+// CHART TIME RANGE
+let chartWindow=60;
+document.querySelector('.pill-sel').addEventListener('change',function(){
+  chartWindow=this.value.includes('2m')?120:60;
+  drawMain();
+});
+
+// FILTER
+const filterPanel=document.getElementById('filter-panel');
+document.getElementById('btn-filter').addEventListener('click',e=>{e.stopPropagation();filterPanel.classList.toggle('open');});
+document.querySelectorAll('.filter-opt').forEach(btn=>{
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    activeFilter=btn.dataset.filter;
+    document.querySelectorAll('.filter-opt').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    filterPanel.classList.remove('open');
+    renderTable();
+  });
+});
+
+// TABLE SEARCH
+document.getElementById('patient-search').addEventListener('input',renderTable);
+
+// MODAL
+const backdrop=document.getElementById('modal-backdrop');
+document.getElementById('modal-close').addEventListener('click',()=>backdrop.classList.remove('open'));
+backdrop.addEventListener('click',e=>{if(e.target===backdrop)backdrop.classList.remove('open');});
+function openModal(pid){
+  const p=ST.find(x=>x.id===pid);if(!p)return;
+  const s=statusFor(p.tremor,p.stability);
+  document.getElementById('modal-title').innerText=p.name+' \u2014 Session Detail';
+  document.getElementById('modal-avatar').innerText=p.init;
+  document.getElementById('modal-avatar').style.background=p.color;
+  document.getElementById('modal-name').innerText=p.name;
+  document.getElementById('modal-meta').innerText='Age '+p.age+' \u00b7 '+p.side+' hand \u00b7 Last active: '+p.lastSession;
+  document.getElementById('modal-tremor').innerText=p.tremor.toFixed(1)+' Hz';
+  document.getElementById('modal-tremor').style.color=p.tremor>5?'var(--red)':p.tremor>3.5?'var(--orange)':'var(--green)';
+  document.getElementById('modal-stability').innerText=Math.round(p.stability)+'%';
+  document.getElementById('modal-drills').innerText=p.drills;
+  document.getElementById('modal-status').innerText=s.label;
+  document.getElementById('modal-status').style.color=s.cls==='critical'?'var(--red)':s.cls==='elevated'?'var(--orange)':'var(--green)';
+  document.getElementById('modal-spikes').innerText=p.spikes;
+  document.getElementById('modal-last').innerText=p.lastSession;
+  document.getElementById('modal-side').innerText=p.side;
+  document.getElementById('modal-bt').innerText=p.bT.toFixed(1)+' Hz';
+  document.getElementById('modal-bs').innerText=p.bS+'%';
+  backdrop.classList.add('open');
+}
+</script>
+</body>
+</html>
